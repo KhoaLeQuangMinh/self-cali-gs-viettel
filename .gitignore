@@ -1,0 +1,15 @@
+# Dataset directory
+VAI_NVS_DATA_ROUND2/
+
+# Submissions and temporary outputs
+submission_round1/
+submission_round1.zip
+temp_model/
+output/
+*.ply
+*.pth
+
+# Python / Environment caches
+__pycache__/
+*.pyc
+.DS_Store
