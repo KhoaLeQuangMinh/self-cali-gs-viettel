@@ -129,6 +129,9 @@ def main():
     parser.add_argument("--working_dir", default="/kaggle/working", help="Path to working output folder")
     parser.add_argument("--iterations", type=int, default=30000, help="Training iterations per scene")
     parser.add_argument("--sh_degree", type=int, default=3, help="Spherical Harmonics degree")
+    parser.add_argument("--resolution", "-r", type=int, default=1, help="Image resolution scaling for training (1 = full resolution)")
+    parser.add_argument("--densi_num", type=float, default=0.0004, help="Densification gradient threshold (higher = prevents point cloud explosion)")
+    parser.add_argument("--opacity_threshold", type=float, default=0.008, help="Opacity pruning threshold (prunes transparent floaters)")
     parser.add_argument("--compile_cuda", action="store_true", help="Compile CUDA submodules before running")
     parser.add_argument("--scenes", nargs="+", default=[], help="Specific scenes to process (default: all)")
 
@@ -153,6 +156,10 @@ def main():
     # Submission output directory
     submission_dir = os.path.join(args.working_dir, "submission_round1")
     os.makedirs(submission_dir, exist_ok=True)
+
+    # Set CUDA memory allocation flag to prevent memory fragmentation on T4
+    env = os.environ.copy()
+    env["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
     # Step 2: Sequential Processing Loop
     for idx, scene in enumerate(args.scenes, 1):
@@ -179,13 +186,16 @@ def main():
             "-m", temp_model_dir,
             "--iterations", str(args.iterations),
             "--sh_degree", str(args.sh_degree),
+            "-r", str(args.resolution),
+            "--densi_num", str(args.densi_num),
+            "--opacity_threshold", str(args.opacity_threshold),
             "--save_iterations", str(args.iterations),
             "--test_iterations", "-1",
             "--r_t_noise", "0.0", "0.0", "1.0",
             "--eval"
         ]
         print(f"Running Training: {' '.join(train_cmd)}")
-        subprocess.run(train_cmd, check=True)
+        subprocess.run(train_cmd, env=env, check=True)
 
         # B. Run Test Poses Rendering
         render_cmd = [
@@ -197,7 +207,7 @@ def main():
             "--sh_degree", str(args.sh_degree)
         ]
         print(f"Running Renderer: {' '.join(render_cmd)}")
-        subprocess.run(render_cmd, check=True)
+        subprocess.run(render_cmd, env=env, check=True)
 
         # C. Clean Up Scene Checkpoints (Disk & RAM Protection)
         print(f"Cleaning up temporary model files for {scene} from disk...")

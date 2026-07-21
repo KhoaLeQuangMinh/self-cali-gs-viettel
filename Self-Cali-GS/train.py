@@ -90,6 +90,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
     first_iter = 0
     tb_writer = prepare_output_and_logger(dataset)
+    opt.densify_grad_threshold = densi_num
     gaussians = GaussianModel(dataset.sh_degree, dataset.asg_degree)
     scene = Scene(dataset, gaussians, random_init=random_init, r_t_noise=r_t_noise, r_t_lr=r_t_lr, global_alignment_lr=global_alignment_lr, outside_rasterizer=outside_rasterizer, flow_scale=flow_scale, render_resolution=render_resolution, apply2gt=apply2gt, vis_pose=args.vis_pose, cubemap=cubemap, table1=table1)
     gaussians.training_setup(opt)
@@ -384,6 +385,8 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                                 gaussians.densify_and_prune(opt.abs_densify_grad_threshold, opacity_threshold, scene.cameras_extent, size_threshold)
                             else:
                                 gaussians.densify_and_prune(opt.densify_grad_threshold, opacity_threshold, scene.cameras_extent, size_threshold)
+                            if iteration % 1000 == 0:
+                                torch.cuda.empty_cache()
 
                         if iteration % opt.opacity_reset_interval == 0 or (dataset.white_background and iteration == opt.densify_from_iter):
                             gaussians.reset_opacity()
