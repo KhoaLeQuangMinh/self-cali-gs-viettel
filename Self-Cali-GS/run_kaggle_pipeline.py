@@ -14,18 +14,33 @@ from argparse import ArgumentParser
 
 
 def compile_cuda_extensions(repo_root):
-    """Compiles 3dgs-pose and simple-knn CUDA extensions."""
+    """Compiles 3dgs-pose and simple-knn CUDA extensions, cloning submodules if empty."""
     print("=== Compiling CUDA Extensions (3dgs-pose & simple-knn) ===")
     
     pose_dir = os.path.join(repo_root, "3dgs-pose")
-    if os.path.exists(pose_dir):
-        print(f"Building {pose_dir}...")
-        subprocess.run([sys.executable, "-m", "pip", "install", "."], cwd=pose_dir, check=True)
-    
     knn_dir = os.path.join(repo_root, "simple-knn")
-    if os.path.exists(knn_dir):
-        print(f"Building {knn_dir}...")
-        subprocess.run([sys.executable, "-m", "pip", "install", "."], cwd=knn_dir, check=True)
+
+    # Check and clone 3dgs-pose if setup.py is missing
+    if not os.path.exists(os.path.join(pose_dir, "setup.py")):
+        print(f"Submodule 3dgs-pose setup.py missing in {pose_dir}. Cloning repository...")
+        if os.path.exists(pose_dir):
+            shutil.rmtree(pose_dir)
+        subprocess.run(["git", "clone", "https://github.com/denghilbert/3dgs-pose", pose_dir], check=True)
+
+    # Check and clone simple-knn if setup.py is missing
+    if not os.path.exists(os.path.join(knn_dir, "setup.py")):
+        print(f"Submodule simple-knn setup.py missing in {knn_dir}. Cloning repository...")
+        if os.path.exists(knn_dir):
+            shutil.rmtree(knn_dir)
+        subprocess.run(["git", "clone", "https://github.com/camenduru/simple-knn", knn_dir], check=True)
+
+    # Build 3dgs-pose (diff_gaussian_rasterization)
+    print(f"Building CUDA rasterizer from {pose_dir}...")
+    subprocess.run([sys.executable, "-m", "pip", "install", "."], cwd=pose_dir, check=True)
+    
+    # Build simple-knn
+    print(f"Building simple-knn CUDA extension from {knn_dir}...")
+    subprocess.run([sys.executable, "-m", "pip", "install", "."], cwd=knn_dir, check=True)
     
     print("=== CUDA Extensions Successfully Compiled ===")
 
