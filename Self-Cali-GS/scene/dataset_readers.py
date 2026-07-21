@@ -197,15 +197,26 @@ def readColmapCameras(cam_extrinsics, cam_intrinsics, images_folder):
         else:
             assert False, "Colmap camera model not handled: only undistorted datasets (PINHOLE or SIMPLE_PINHOLE cameras) supported!"
 
-        image_path = os.path.join(images_folder, os.path.basename(extr.name))
+        base_name = os.path.basename(extr.name)
+        image_path = os.path.join(images_folder, base_name)
         if not os.path.exists(image_path):
-            image_path = image_path.replace('png', 'jpg')
+            stem = os.path.splitext(base_name)[0]
+            found = False
+            for ext in ['.jpg', '.JPG', '.png', '.PNG', '.jpeg', '.JPEG']:
+                alt_path = os.path.join(images_folder, stem + ext)
+                if os.path.exists(alt_path):
+                    image_path = alt_path
+                    found = True
+                    break
+            if not found:
+                # Skip cameras whose images are not in the training folder
+                continue
+
         image_name = os.path.basename(image_path).split(".")[0]
-        if 'paul_garden' in images_folder:
-            image = Image.open(image_path.replace('png', 'jpg'))
-        else:
+        try:
             image = Image.open(image_path)
-        # depth = imageio.imread(depth_name)
+        except Exception:
+            continue
 
         if focal_length_y != None:
             cam_info = CameraInfo(uid=uid, R=R, T=T, FovY=FovY, FovX=FovX, focal_length_x=focal_length_x, focal_length_y=focal_length_y, image=image, intrinsic_matrix=intrinsic_matrix,                              image_path=image_path, image_name=image_name, width=width, height=height)
