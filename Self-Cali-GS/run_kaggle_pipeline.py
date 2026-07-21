@@ -13,9 +13,18 @@ import pandas as pd
 from argparse import ArgumentParser
 
 
+def install_python_dependencies():
+    """Installs required Python packages for Self-Cali-GS if missing."""
+    print("=== Ensuring Python Dependencies (plyfile, easydict, trimesh, etc.) ===")
+    required_packages = ["plyfile", "easydict", "trimesh", "imageio", "scipy"]
+    subprocess.run([sys.executable, "-m", "pip", "install"] + required_packages, check=True)
+
+
 def compile_cuda_extensions(repo_root):
     """Compiles 3dgs-pose and simple-knn CUDA extensions, cloning submodules if empty."""
-    print("=== Compiling CUDA Extensions (3dgs-pose & simple-knn) ===")
+    install_python_dependencies()
+
+    print("\n=== Compiling CUDA Extensions (3dgs-pose & simple-knn) ===")
     
     pose_dir = os.path.join(repo_root, "3dgs-pose")
     knn_dir = os.path.join(repo_root, "simple-knn")
@@ -113,7 +122,7 @@ def main():
 
     repo_root = os.path.dirname(os.path.abspath(__file__))
 
-    # Step 1: Compile CUDA Extensions if requested
+    # Step 1: Compile CUDA Extensions & Install dependencies if requested
     if args.compile_cuda:
         compile_cuda_extensions(repo_root)
 
