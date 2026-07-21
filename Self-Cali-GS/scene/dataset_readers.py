@@ -128,8 +128,10 @@ def readColmapCameras(cam_extrinsics, cam_intrinsics, images_folder):
         #    return mat
         #R_test = mat_from_quat(extr.qvec)
 
+        focal_length_y = None
         if intr.model=="SIMPLE_PINHOLE" or intr.model=="RADIAL":
             focal_length_x = intr.params[0]
+            focal_length_y = focal_length_x
             FovY = focal2fov(focal_length_x, height)
             FovX = focal2fov(focal_length_x, width)
             intrinsic_matrix = np.array([
@@ -172,6 +174,7 @@ def readColmapCameras(cam_extrinsics, cam_intrinsics, images_folder):
                 height = 1024
         elif intr.model=="SIMPLE_RADIAL":
             focal_length_x = intr.params[0]
+            focal_length_y = focal_length_x
             FovY = focal2fov(focal_length_x, height)
             FovX = focal2fov(focal_length_x, width)
             intrinsic_matrix = np.array([
