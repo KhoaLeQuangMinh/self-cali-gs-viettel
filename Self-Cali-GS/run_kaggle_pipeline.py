@@ -14,9 +14,23 @@ from argparse import ArgumentParser
 
 
 def install_python_dependencies():
-    """Installs required Python packages for Self-Cali-GS if missing."""
-    print("=== Ensuring Python Dependencies (plyfile, easydict, trimesh, etc.) ===")
-    required_packages = ["plyfile", "easydict", "trimesh", "imageio", "scipy"]
+    """Installs all required Python packages for Self-Cali-GS if missing."""
+    print("=== Ensuring Python Dependencies (plyfile, FrEIA, easydict, trimesh, etc.) ===")
+    required_packages = [
+        "plyfile",
+        "FrEIA",
+        "easydict",
+        "trimesh",
+        "imageio",
+        "scipy",
+        "opencv-python",
+        "matplotlib",
+        "termcolor",
+        "ipdb",
+        "visdom",
+        "wandb",
+        "pandas"
+    ]
     subprocess.run([sys.executable, "-m", "pip", "install"] + required_packages, check=True)
 
 
