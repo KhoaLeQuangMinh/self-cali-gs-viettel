@@ -125,7 +125,10 @@ class Scene:
             # simply add noise
             so3_noise = torch.randn((len(scene_info.train_cameras), 3), generator=generator) * r_t_noise[0]
             t_noise = (torch.randn((len(scene_info.train_cameras), 3), generator=generator) * r_t_noise[1]).numpy()
-            fov_noise = np.exp(np.random.normal(0., np.log(r_t_noise[2]), len(scene_info.train_cameras)))
+            if len(r_t_noise) > 2 and r_t_noise[2] > 0:
+                fov_noise = np.exp(np.random.normal(0., np.log(r_t_noise[2]), len(scene_info.train_cameras)))
+            else:
+                fov_noise = np.ones(len(scene_info.train_cameras))
             #so3_noise = torch.randn((len(scene_info.train_cameras), 3)) * r_t_noise[0]
             #t_noise = (torch.randn((len(scene_info.train_cameras), 3)) * r_t_noise[1]).numpy()
 

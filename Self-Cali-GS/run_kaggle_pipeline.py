@@ -181,6 +181,7 @@ def main():
             "--sh_degree", str(args.sh_degree),
             "--save_iterations", str(args.iterations),
             "--test_iterations", "-1",
+            "--r_t_noise", "0.0", "0.0", "1.0",
             "--eval"
         ]
         print(f"Running Training: {' '.join(train_cmd)}")
