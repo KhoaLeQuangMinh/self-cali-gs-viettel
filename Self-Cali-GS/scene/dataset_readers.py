@@ -304,7 +304,12 @@ def readColmapSceneInfo(path, images, eval, llffhold=8, init_type="sfm", num_pts
                 xyz, rgb, _ = read_points3D_binary(bin_path)
             except:
                 xyz, rgb, _ = read_points3D_text(txt_path)
-            storePly(ply_path, xyz, rgb)
+            try:
+                storePly(ply_path, xyz, rgb)
+            except OSError:
+                alt_ply_path = os.path.join("/tmp", f"{os.path.basename(path)}_points3D.ply")
+                storePly(alt_ply_path, xyz, rgb)
+                ply_path = alt_ply_path
     elif init_type == "random":
         ply_path = os.path.join(path, "random.ply")
         print(f"Generating random point cloud ({num_pts})...")
