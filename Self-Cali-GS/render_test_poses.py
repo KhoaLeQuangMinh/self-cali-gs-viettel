@@ -82,14 +82,14 @@ def load_test_cameras_from_csv(csv_path):
     return cameras
 
 
-def render_test_poses(model_path, iteration, csv_path, output_dir, sh_degree=3):
+def render_test_poses(model_path, iteration, csv_path, output_dir, sh_degree=3, asg_degree=24):
     """
     Loads trained Gaussian model checkpoint and renders images for all test poses in test_poses.csv.
     """
     os.makedirs(output_dir, exist_ok=True)
 
     # Initialize Gaussian Model & Load Checkpoint
-    gaussians = GaussianModel(sh_degree)
+    gaussians = GaussianModel(sh_degree, asg_degree)
     ply_path = os.path.join(model_path, "point_cloud", f"iteration_{iteration}", "point_cloud.ply")
 
     if not os.path.exists(ply_path):
@@ -150,6 +150,7 @@ if __name__ == "__main__":
     parser.add_argument("--csv_path", required=True, help="Path to test_poses.csv file")
     parser.add_argument("--output_dir", "-o", required=True, help="Directory to save rendered images")
     parser.add_argument("--sh_degree", type=int, default=3, help="Spherical Harmonics degree used in training")
+    parser.add_argument("--asg_degree", type=int, default=24, help="ASG degree used in Self-Cali-GS")
 
     args = parser.parse_args()
     render_test_poses(
@@ -157,5 +158,6 @@ if __name__ == "__main__":
         iteration=args.iteration,
         csv_path=args.csv_path,
         output_dir=args.output_dir,
-        sh_degree=args.sh_degree
+        sh_degree=args.sh_degree,
+        asg_degree=args.asg_degree
     )
