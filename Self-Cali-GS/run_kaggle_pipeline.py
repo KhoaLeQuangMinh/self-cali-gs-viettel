@@ -156,6 +156,7 @@ def main():
     # Submission output directory
     submission_dir = os.path.join(args.working_dir, "submission_round1")
     os.makedirs(submission_dir, exist_ok=True)
+    zip_path = os.path.join(args.working_dir, "submission_round1.zip")
 
     # Set CUDA memory allocation flag to prevent memory fragmentation on T4
     env = os.environ.copy()
@@ -178,6 +179,16 @@ def main():
         if not os.path.exists(scene_csv_path):
             print(f"[Error] test_poses.csv missing for scene {scene}: {scene_csv_path}")
             continue
+
+        # Check if scene is already rendered (Smart Resume)
+        if os.path.exists(scene_csv_path) and os.path.exists(scene_render_output):
+            df = pd.read_csv(scene_csv_path)
+            expected_imgs = [str(x) for x in df['image_name'].tolist()]
+            rendered_imgs = os.listdir(scene_render_output) if os.path.exists(scene_render_output) else []
+            if all(img in rendered_imgs for img in expected_imgs):
+                print(f"[SKIP] Scene {scene} is ALREADY fully rendered ({len(expected_imgs)}/{len(expected_imgs)} images exist). Skipping!")
+                create_submission_zip(submission_dir, zip_path)
+                continue
 
         # A. Run Training
         train_cmd = [
@@ -220,6 +231,9 @@ def main():
             torch.cuda.empty_cache()
         except Exception:
             pass
+
+        # Progressive zipping: Update submission_round1.zip immediately after each scene completes!
+        create_submission_zip(submission_dir, zip_path)
 
     # Step 3: Verification
     is_valid = verify_submission(submission_dir, args.dataset_dir, args.scenes)
