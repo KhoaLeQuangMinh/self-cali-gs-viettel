@@ -107,8 +107,9 @@ def render_test_poses(model_path, iteration, csv_path, output_dir, sh_degree=3, 
     parser = ArgumentParser(description="Render Test Poses")
     pipeline = PipelineParams(parser).extract(parser.parse_args([]))
 
-    # Background color (black)
+    # Background color (black) and shift_factors tensor required by 3dgs-pose rasterizer
     bg_color = torch.tensor([0.0, 0.0, 0.0], dtype=torch.float32, device="cuda")
+    shift_factors = torch.tensor([0.0, 0.0, 0.0], dtype=torch.float32, device="cuda")
 
     # Identity alignment matrix for baseline rendering
     global_alignment = [
@@ -129,7 +130,7 @@ def render_test_poses(model_path, iteration, csv_path, output_dir, sh_degree=3, 
                 pipe=pipeline,
                 bg_color=bg_color,
                 mlp_color=0,
-                shift_factors=None,
+                shift_factors=shift_factors,
                 hybrid=False,
                 global_alignment=global_alignment
             )
