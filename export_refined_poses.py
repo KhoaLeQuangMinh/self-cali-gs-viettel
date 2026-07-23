@@ -86,7 +86,7 @@ def find_opt_cams_path(saved_poses_dir, scene):
     return None
 
 
-def export_colmap_format(cameras_info, output_dir):
+def export_colmap_format(cameras_info, output_dir, scene_train_dir=None):
     """
     Writes both text (cameras.txt, images.txt, points3D.txt) and binary 
     (cameras.bin, images.bin, points3D.bin) COLMAP files into output_dir.
@@ -157,8 +157,20 @@ def export_colmap_format(cameras_info, output_dir):
             f_img.write(name)
             f_img.write(struct.pack("<Q", 0)) # 0 points2D
 
-    with open(points_bin_path, "wb") as f_pts:
-        f_pts.write(struct.pack("<Q", 0))
+    # Copy original points3D file if available
+    copied_pts = False
+    if scene_train_dir:
+        for pts_name in ["points3D.bin", "points3D.txt", "points3D.ply"]:
+            src_pts = os.path.join(scene_train_dir, "sparse", "0", pts_name)
+            if not os.path.exists(src_pts):
+                src_pts = os.path.join(scene_train_dir, pts_name)
+            if os.path.exists(src_pts) and os.path.getsize(src_pts) > 0:
+                shutil.copy2(src_pts, os.path.join(output_dir, pts_name))
+                copied_pts = True
+
+    if not copied_pts:
+        with open(points_bin_path, "wb") as f_pts:
+            f_pts.write(struct.pack("<Q", 0))
 
     print(f"  [OK] Exported {len(cameras_info)} cameras to COLMAP format in: {output_dir}")
 
@@ -302,8 +314,8 @@ def process_scene_poses(scene_train_dir, opt_cams_path, target_train_dir=None):
     sparse_0_dir = os.path.join(target_train_dir, "sparse", "0")
     sparse_ref_dir = os.path.join(target_train_dir, "sparse_refined")
     
-    export_colmap_format(cameras_info, sparse_0_dir)
-    export_colmap_format(cameras_info, sparse_ref_dir)
+    export_colmap_format(cameras_info, sparse_0_dir, scene_train_dir)
+    export_colmap_format(cameras_info, sparse_ref_dir, scene_train_dir)
     return target_train_dir
 
 
