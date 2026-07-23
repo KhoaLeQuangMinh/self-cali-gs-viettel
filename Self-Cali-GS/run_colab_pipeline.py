@@ -222,6 +222,7 @@ def main():
             "--densi_num", str(args.densi_num),
             "--opacity_threshold", str(args.opacity_threshold),
             "--save_iterations", str(args.iterations),
+            "--checkpoint_iterations", str(args.iterations),
             "--test_iterations", "-1",
             "--r_t_noise", "0.0", "0.0", "1.0",
             "--eval"

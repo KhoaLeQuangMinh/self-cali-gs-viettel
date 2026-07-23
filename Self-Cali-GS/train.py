@@ -487,7 +487,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                     scene.scheduler_fovx.step()
                     scene.scheduler_fovy.step()
 
-            if (iteration in checkpoint_iterations):
+            if (iteration in checkpoint_iterations) or (iteration == opt.iterations):
                 print("\n[ITER {}] Saving Checkpoint".format(iteration))
                 torch.save((gaussians.capture(), iteration), scene.model_path + "/chkpnt" + str(iteration) + ".pth")
                 torch.save(lens_net, os.path.join(scene.model_path, f'lens_net{iteration}.pth'))
