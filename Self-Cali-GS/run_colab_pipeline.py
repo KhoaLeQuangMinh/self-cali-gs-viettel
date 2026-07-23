@@ -248,17 +248,27 @@ def main():
         print(f"Running Renderer: {' '.join(render_cmd)}")
         subprocess.run(render_cmd, env=env, check=True)
 
-        # Backup opt_cams.pt and lens_net checkpoints to saved_poses_dir (e.g., Google Drive)
-        if args.saved_poses_dir:
-            drive_scene_dir = os.path.join(args.saved_poses_dir, "content", "working", "temp_model", scene)
-            os.makedirs(drive_scene_dir, exist_ok=True)
-            local_opt_cams = os.path.join(temp_model_dir, "opt_cams.pt")
-            if os.path.exists(local_opt_cams):
-                dest_path = os.path.join(drive_scene_dir, "opt_cams.pt")
-                shutil.copy2(local_opt_cams, dest_path)
-                print(f"[Backup OK] Saved {scene} opt_cams.pt ({os.path.getsize(dest_path)} bytes) to {dest_path}")
+        # Backup opt_cams.pt to saved_poses_dir (e.g., Google Drive) AND working_dir
+        local_opt_cams = os.path.join(temp_model_dir, "opt_cams.pt")
+        if os.path.exists(local_opt_cams) and os.path.getsize(local_opt_cams) > 0:
+            # 1. Copy to Google Drive (saved_poses_dir)
+            if args.saved_poses_dir:
+                drive_scene_dir = os.path.join(args.saved_poses_dir, "content", "working", "temp_model", scene)
+                os.makedirs(drive_scene_dir, exist_ok=True)
+                dest_drive = os.path.join(drive_scene_dir, "opt_cams.pt")
+                shutil.copy2(local_opt_cams, dest_drive)
+                print(f"[Backup OK] Drive: {scene} opt_cams.pt ({os.path.getsize(dest_drive)} bytes) -> {dest_drive}")
 
-        # C. Clean Up Scene Checkpoints (Disk & RAM Protection)
+            # 2. Copy to working_dir/saved_poses/ (downloadable from Colab/Kaggle file browser)
+            working_save_dir = os.path.join(args.working_dir, "saved_poses", scene)
+            os.makedirs(working_save_dir, exist_ok=True)
+            dest_working = os.path.join(working_save_dir, "opt_cams.pt")
+            shutil.copy2(local_opt_cams, dest_working)
+            print(f"[Backup OK] Working: {scene} opt_cams.pt ({os.path.getsize(dest_working)} bytes) -> {dest_working}")
+        else:
+            print(f"[Warning] No opt_cams.pt found for {scene} (opt_cam may not have been enabled)")
+
+        # C. Clean Up Scene Checkpoints (Disk & RAM Protection) — opt_cams.pt already backed up above
         print(f"Cleaning up temporary model files for {scene} from disk...")
         if os.path.exists(temp_model_dir):
             shutil.rmtree(temp_model_dir)
