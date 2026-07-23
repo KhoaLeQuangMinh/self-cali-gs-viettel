@@ -69,6 +69,7 @@ def find_opt_cams_path(saved_poses_dir, scene):
         os.path.join(saved_poses_dir, scene, "opt_cams.pt"),
         os.path.join(saved_poses_dir, "temp_model", scene, "opt_cams.pt"),
         os.path.join(saved_poses_dir, f"{scene}_poses.json"),
+        os.path.join(saved_poses_dir, "opt_cams.pt"),
     ]
     
     for path in candidate_paths:
@@ -165,10 +166,48 @@ def process_scene_poses(scene_train_dir, opt_cams_path):
     """Loads opt_cams.pt / JSON and converts to COLMAP format in train/sparse/0/ and train/sparse_refined/."""
     print(f"Loading refined poses from: {opt_cams_path}")
     
+    # Patch torch.tensor and torch.device for CPU execution
+    if not torch.cuda.is_available():
+        _orig_tensor = torch.tensor
+        def mock_tensor(*args, **kwargs):
+            if 'device' in kwargs and kwargs['device'] == 'cuda':
+                kwargs['device'] = 'cpu'
+            return _orig_tensor(*args, **kwargs)
+        torch.tensor = mock_tensor
+
+        _orig_device = torch.device
+        def mock_device(dev, *args, **kwargs):
+            if isinstance(dev, str) and 'cuda' in dev and not torch.cuda.is_available():
+                return _orig_device('cpu')
+            return _orig_device(dev, *args, **kwargs)
+        torch.device = mock_device
+
+        import types
+        mock_knn = types.ModuleType('simple_knn')
+        mock_knn_C = types.ModuleType('simple_knn._C')
+        mock_knn_C.distCUDA2 = lambda *args: None
+        sys.modules['simple_knn'] = mock_knn
+        sys.modules['simple_knn._C'] = mock_knn_C
+
+        torch.Tensor.cuda = lambda self, *args, **kwargs: self
+
+    self_cali_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Self-Cali-GS")
+    if os.path.exists(self_cali_path) and self_cali_path not in sys.path:
+        sys.path.insert(0, self_cali_path)
+        
     cameras_info = []
     
     if opt_cams_path.endswith(".pt"):
-        cams = torch.load(opt_cams_path, map_location="cpu")
+        cams_data = torch.load(opt_cams_path, map_location="cpu", weights_only=False)
+        if isinstance(cams_data, dict) and 1.0 in cams_data:
+            cams = cams_data[1.0]
+        elif isinstance(cams_data, dict):
+            cams = list(cams_data.values())[0]
+        elif isinstance(cams_data, list):
+            cams = cams_data
+        else:
+            cams = [cams_data]
+
         for cam in cams:
             R = getattr(cam, "R", np.eye(3))
             if hasattr(R, "cpu"):
@@ -183,8 +222,8 @@ def process_scene_poses(scene_train_dir, opt_cams_path):
                 T = T.cpu().numpy()
             tvec = T.flatten()
 
-            w = getattr(cam, "width", 1920)
-            h = getattr(cam, "height", 1080)
+            w = getattr(cam, "image_width", getattr(cam, "width", 1920))
+            h = getattr(cam, "image_height", getattr(cam, "height", 1080))
 
             if hasattr(cam, "fx") and hasattr(cam, "fy"):
                 fx, fy = float(cam.fx), float(cam.fy)

@@ -13,3 +13,10 @@ output/
 __pycache__/
 *.pyc
 .DS_Store
+
+# Temporary test data
+opt_cams.pt
+*.JPG
+*.jpg
+test_dataset/
+
