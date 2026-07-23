@@ -11,6 +11,7 @@ This enables hbb1/2d-gaussian-splatting (and any standard 3DGS pipeline) to load
 import os
 import sys
 import glob
+import shutil
 import math
 import torch
 import struct
