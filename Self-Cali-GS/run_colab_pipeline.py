@@ -126,8 +126,9 @@ def create_submission_zip(submission_dir, zip_output_path):
 def main():
     parser = ArgumentParser(description="Master Colab Orchestration for Self-Cali-GS (A100 Max Settings)")
     parser.add_argument("--dataset_dir", default="/content/VAI_NVS_DATA_ROUND2", help="Path to input dataset folder")
+    parser.add_argument("--saved_poses_dir", default="/content/drive/MyDrive/saved_poses", help="Path to saved poses directory on Google Drive")
     parser.add_argument("--working_dir", default="/content/working", help="Path to working output folder")
-    parser.add_argument("--output_zip", default="/content/submission_round1.zip", help="Path for output zip file")
+    parser.add_argument("--output_zip", default="/content/drive/MyDrive/submission_round1.zip", help="Path for output zip file")
     parser.add_argument("--iterations", type=int, default=30000, help="Training iterations per scene (Full 30k)")
     parser.add_argument("--sh_degree", type=int, default=3, help="Spherical Harmonics degree (Full SH3)")
     parser.add_argument("--resolution", "-r", type=int, default=1, help="Image resolution scaling (1 = Full Resolution)")
