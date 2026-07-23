@@ -144,6 +144,14 @@ def main():
     if args.compile_cuda:
         compile_cuda_extensions(repo_root)
 
+    # Automatic resolution for nested unzipped dataset folders
+    if os.path.exists(args.dataset_dir):
+        # Check if dataset_dir contains a single nested folder with the same name
+        nested_same = os.path.join(args.dataset_dir, os.path.basename(args.dataset_dir))
+        if os.path.exists(nested_same) and os.path.isdir(nested_same):
+            print(f"[Dataset Resolver] Auto-detected nested dataset folder: {nested_same}")
+            args.dataset_dir = nested_same
+
     # Auto-detect scenes if not provided
     if not args.scenes:
         search_path = os.path.join(args.dataset_dir, "*")
