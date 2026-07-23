@@ -132,6 +132,7 @@ def main():
     parser.add_argument("--sh_degree", type=int, default=3, help="Spherical Harmonics degree (Full SH3)")
     parser.add_argument("--resolution", "-r", type=int, default=1, help="Image resolution scaling (1 = Full Resolution)")
     parser.add_argument("--densi_num", type=float, default=0.0002, help="Original baseline densification threshold for A100 max detail")
+    parser.add_argument("--opacity_threshold", type=float, default=0.005, help="Original baseline opacity threshold")
     parser.add_argument("--no_opt_cam", action="store_true", help="Disable camera pose optimization (opt_cam enabled by default)")
     parser.add_argument("--no_opt_intrinsic", action="store_true", help="Disable camera intrinsic optimization (opt_intrinsic enabled by default)")
     parser.add_argument("--compile_cuda", action="store_true", help="Compile CUDA submodules before running")
