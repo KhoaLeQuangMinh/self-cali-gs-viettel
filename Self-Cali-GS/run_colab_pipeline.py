@@ -130,14 +130,17 @@ def main():
     parser.add_argument("--output_zip", default="/content/submission_round1.zip", help="Path for output zip file")
     parser.add_argument("--iterations", type=int, default=30000, help="Training iterations per scene (Full 30k)")
     parser.add_argument("--sh_degree", type=int, default=3, help="Spherical Harmonics degree (Full SH3)")
-    parser.add_argument("--resolution", "-r", type=int, default=1, help="Image resolution scaling (1 = 100% Full Resolution)")
+    parser.add_argument("--resolution", "-r", type=int, default=1, help="Image resolution scaling (1 = Full Resolution)")
     parser.add_argument("--densi_num", type=float, default=0.0002, help="Original baseline densification threshold for A100 max detail")
-    parser.add_argument("--opt_cam", action="store_true", default=True, help="Optimize camera poses (Full Self-Cali-GS feature)")
-    parser.add_argument("--opt_intrinsic", action="store_true", default=True, help="Optimize camera intrinsics/focal length (Full Self-Cali-GS feature)")
+    parser.add_argument("--no_opt_cam", action="store_true", help="Disable camera pose optimization (opt_cam enabled by default)")
+    parser.add_argument("--no_opt_intrinsic", action="store_true", help="Disable camera intrinsic optimization (opt_intrinsic enabled by default)")
     parser.add_argument("--compile_cuda", action="store_true", help="Compile CUDA submodules before running")
     parser.add_argument("--scenes", nargs="+", default=[], help="Specific scenes to process (default: all 7)")
 
     args = parser.parse_args()
+
+    opt_cam = not args.no_opt_cam
+    opt_intrinsic = not args.no_opt_intrinsic
 
     repo_root = os.path.dirname(os.path.abspath(__file__))
 
@@ -215,9 +218,9 @@ def main():
             "--eval"
         ]
 
-        if args.opt_cam:
+        if opt_cam:
             train_cmd.append("--opt_cam")
-        if args.opt_intrinsic:
+        if opt_intrinsic:
             train_cmd.append("--opt_intrinsic")
 
         print(f"Running Training (FULL Self-Cali-GS A100 Mode): {' '.join(train_cmd)}")
