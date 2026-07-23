@@ -271,6 +271,14 @@ def process_scene_poses(scene_train_dir, opt_cams_path, target_train_dir=None):
                 name = getattr(cam, "image_name", f"{len(cameras_info):04d}.png")
                 name = os.path.basename(str(name))
 
+                # Match extension from real images directory if name missing extension
+                orig_images_dir = os.path.join(scene_train_dir, "images")
+                if os.path.exists(orig_images_dir) and not os.path.exists(os.path.join(orig_images_dir, name)):
+                    for ext in [".JPG", ".jpg", ".png", ".jpeg", ".PNG", ".JPEG"]:
+                        if os.path.exists(os.path.join(orig_images_dir, name + ext)):
+                            name = name + ext
+                            break
+
                 cameras_info.append({
                     "name": name,
                     "qvec": qvec,
