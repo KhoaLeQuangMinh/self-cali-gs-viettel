@@ -225,58 +225,70 @@ def process_scene_poses(scene_train_dir, opt_cams_path, target_train_dir=None):
     cameras_info = []
     
     if opt_cams_path.endswith(".pt"):
-        cams_data = torch.load(opt_cams_path, map_location="cpu", weights_only=False)
-        if isinstance(cams_data, dict) and 1.0 in cams_data:
-            cams = cams_data[1.0]
-        elif isinstance(cams_data, dict):
-            cams = list(cams_data.values())[0]
-        elif isinstance(cams_data, list):
-            cams = cams_data
-        else:
-            cams = [cams_data]
+        try:
+            if os.path.getsize(opt_cams_path) == 0:
+                raise ValueError("File size is 0 bytes")
 
-        for cam in cams:
-            R = getattr(cam, "R", np.eye(3))
-            if hasattr(R, "cpu"):
-                R = R.cpu().numpy()
-            if R.shape == (3, 3):
-                qvec = rotation_matrix_to_quaternion(R)
+            cams_data = torch.load(opt_cams_path, map_location="cpu", weights_only=False)
+            if isinstance(cams_data, dict) and 1.0 in cams_data:
+                cams = cams_data[1.0]
+            elif isinstance(cams_data, dict):
+                cams = list(cams_data.values())[0]
+            elif isinstance(cams_data, list):
+                cams = cams_data
             else:
-                qvec = np.array([1.0, 0.0, 0.0, 0.0])
+                cams = [cams_data]
 
-            T = getattr(cam, "T", np.zeros(3))
-            if hasattr(T, "cpu"):
-                T = T.cpu().numpy()
-            tvec = T.flatten()
+            for cam in cams:
+                R = getattr(cam, "R", np.eye(3))
+                if hasattr(R, "cpu"):
+                    R = R.cpu().numpy()
+                if R.shape == (3, 3):
+                    qvec = rotation_matrix_to_quaternion(R)
+                else:
+                    qvec = np.array([1.0, 0.0, 0.0, 0.0])
 
-            w = getattr(cam, "image_width", getattr(cam, "width", 1920))
-            h = getattr(cam, "image_height", getattr(cam, "height", 1080))
+                T = getattr(cam, "T", np.zeros(3))
+                if hasattr(T, "cpu"):
+                    T = T.cpu().numpy()
+                tvec = T.flatten()
 
-            if hasattr(cam, "fx") and hasattr(cam, "fy"):
-                fx, fy = float(cam.fx), float(cam.fy)
-            elif hasattr(cam, "FoVx") and hasattr(cam, "FoVy"):
-                fx = fov2focal(float(cam.FoVx), w)
-                fy = fov2focal(float(cam.FoVy), h)
-            else:
-                fx = fy = 1000.0
+                w = getattr(cam, "image_width", getattr(cam, "width", 1920))
+                h = getattr(cam, "image_height", getattr(cam, "height", 1080))
 
-            cx = getattr(cam, "cx", w / 2.0)
-            cy = getattr(cam, "cy", h / 2.0)
+                if hasattr(cam, "fx") and hasattr(cam, "fy"):
+                    fx, fy = float(cam.fx), float(cam.fy)
+                elif hasattr(cam, "FoVx") and hasattr(cam, "FoVy"):
+                    fx = fov2focal(float(cam.FoVx), w)
+                    fy = fov2focal(float(cam.FoVy), h)
+                else:
+                    fx = fy = 1000.0
 
-            name = getattr(cam, "image_name", f"{len(cameras_info):04d}.png")
-            name = os.path.basename(str(name))
+                cx = getattr(cam, "cx", w / 2.0)
+                cy = getattr(cam, "cy", h / 2.0)
 
-            cameras_info.append({
-                "name": name,
-                "qvec": qvec,
-                "tvec": tvec,
-                "width": w,
-                "height": h,
-                "fx": fx,
-                "fy": fy,
-                "cx": cx,
-                "cy": cy
-            })
+                name = getattr(cam, "image_name", f"{len(cameras_info):04d}.png")
+                name = os.path.basename(str(name))
+
+                cameras_info.append({
+                    "name": name,
+                    "qvec": qvec,
+                    "tvec": tvec,
+                    "width": w,
+                    "height": h,
+                    "fx": fx,
+                    "fy": fy,
+                    "cx": cx,
+                    "cy": cy
+                })
+        except Exception as e:
+            print(f"[Warning] Could not load corrupted/incomplete {opt_cams_path}: {e}")
+            print(f"  --> Falling back to original COLMAP sparse/0 directory for {target_train_dir}")
+            orig_sparse = os.path.join(scene_train_dir, "sparse", "0")
+            target_sparse = os.path.join(target_train_dir, "sparse", "0")
+            if os.path.exists(orig_sparse) and not os.path.exists(target_sparse):
+                shutil.copytree(orig_sparse, target_sparse)
+            return target_train_dir
             
     sparse_0_dir = os.path.join(target_train_dir, "sparse", "0")
     sparse_ref_dir = os.path.join(target_train_dir, "sparse_refined")
