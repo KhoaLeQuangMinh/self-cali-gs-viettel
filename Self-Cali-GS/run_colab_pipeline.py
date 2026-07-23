@@ -132,7 +132,8 @@ def main():
     parser.add_argument("--sh_degree", type=int, default=3, help="Spherical Harmonics degree (Full SH3)")
     parser.add_argument("--resolution", "-r", type=int, default=1, help="Image resolution scaling (1 = 100% Full Resolution)")
     parser.add_argument("--densi_num", type=float, default=0.0002, help="Original baseline densification threshold for A100 max detail")
-    parser.add_argument("--opacity_threshold", type=float, default=0.005, help="Original baseline opacity threshold")
+    parser.add_argument("--opt_cam", action="store_true", default=True, help="Optimize camera poses (Full Self-Cali-GS feature)")
+    parser.add_argument("--opt_intrinsic", action="store_true", default=True, help="Optimize camera intrinsics/focal length (Full Self-Cali-GS feature)")
     parser.add_argument("--compile_cuda", action="store_true", help="Compile CUDA submodules before running")
     parser.add_argument("--scenes", nargs="+", default=[], help="Specific scenes to process (default: all 7)")
 
@@ -198,7 +199,7 @@ def main():
                 create_submission_zip(submission_dir, args.output_zip)
                 continue
 
-        # A. Run Training (Full Maximum A100 Settings)
+        # A. Run Training (Full Maximum A100 Settings + Self-Calibration)
         train_cmd = [
             sys.executable, os.path.join(repo_root, "train.py"),
             "-s", scene_train_path,
@@ -213,7 +214,13 @@ def main():
             "--r_t_noise", "0.0", "0.0", "1.0",
             "--eval"
         ]
-        print(f"Running Training (MAX A100 Settings): {' '.join(train_cmd)}")
+
+        if args.opt_cam:
+            train_cmd.append("--opt_cam")
+        if args.opt_intrinsic:
+            train_cmd.append("--opt_intrinsic")
+
+        print(f"Running Training (FULL Self-Cali-GS A100 Mode): {' '.join(train_cmd)}")
         subprocess.run(train_cmd, env=env, check=True)
 
         # B. Run Test Poses Rendering
