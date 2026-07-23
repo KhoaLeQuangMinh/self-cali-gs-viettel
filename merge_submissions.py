@@ -19,8 +19,9 @@ def merge_scene_zips(input_dir, output_zip_path, dataset_dir):
 
     print(f"=== Merging Submissions from: {input_dir} ===")
 
-    # 1. Process Zip files or Folders in input_dir
-    items = os.listdir(input_dir)
+    # 1. Process Zip files or valid Scene Folders in input_dir
+    valid_scenes = ['HCM0421', 'HCM0539', 'HCM0540', 'HCM0644', 'HCM0674', 'bonsai', 'chair']
+    items = sorted(os.listdir(input_dir))
     for item in items:
         item_path = os.path.join(input_dir, item)
         if item == "merged_submission_temp" or item == os.path.basename(output_zip_path):
@@ -41,7 +42,7 @@ def merge_scene_zips(input_dir, output_zip_path, dataset_dir):
                                 os.makedirs(os.path.dirname(target_path), exist_ok=True)
                                 with zip_ref.open(member) as source, open(target_path, "wb") as target:
                                     shutil.copyfileobj(source, target)
-        elif os.path.isdir(item_path):
+        elif os.path.isdir(item_path) and item in valid_scenes:
             # Direct scene folder
             scene_name = item
             target_scene_dir = os.path.join(submission_root, scene_name)
