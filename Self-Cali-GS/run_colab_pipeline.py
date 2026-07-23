@@ -146,7 +146,14 @@ def main():
 
     repo_root = os.path.dirname(os.path.abspath(__file__))
 
-    # Step 1: Compile CUDA Extensions & Install dependencies if requested
+    # Step 1: Compile CUDA Extensions & Install dependencies if missing or requested
+    try:
+        import diff_gaussian_rasterization
+        import simple_knn
+    except ImportError:
+        print("[Auto-Compile] CUDA extensions missing. Auto-enabling compilation...")
+        args.compile_cuda = True
+
     if args.compile_cuda:
         compile_cuda_extensions(repo_root)
 
