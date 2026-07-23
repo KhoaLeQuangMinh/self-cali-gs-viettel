@@ -63,20 +63,20 @@ def fov2focal(fov, pixels):
 
 
 def find_opt_cams_path(saved_poses_dir, scene):
-    """Searches multiple candidate paths for opt_cams.pt on Google Drive or local disk."""
+    """Searches multiple candidate paths for opt_cams.pt for a specific scene."""
     candidate_paths = [
         os.path.join(saved_poses_dir, "content", "working", "temp_model", scene, "opt_cams.pt"),
         os.path.join(saved_poses_dir, scene, "opt_cams.pt"),
         os.path.join(saved_poses_dir, "temp_model", scene, "opt_cams.pt"),
         os.path.join(saved_poses_dir, f"{scene}_poses.json"),
-        os.path.join(saved_poses_dir, "opt_cams.pt"),
+        os.path.join(saved_poses_dir, scene, "cams_train30000.pt"),
     ]
     
     for path in candidate_paths:
         if os.path.exists(path):
             return path
             
-    # Glob search fallback
+    # Glob search fallback strictly matching scene directory
     pattern = os.path.join(saved_poses_dir, "**", scene, "opt_cams.pt")
     matches = glob.glob(pattern, recursive=True)
     if matches:
