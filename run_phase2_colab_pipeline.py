@@ -78,7 +78,7 @@ def compile_cuda_extensions():
     print("=== 2DGS CUDA Extensions Successfully Compiled ===")
 
 
-def export_refined_poses(dataset_dir, saved_poses_dir, scenes):
+def export_refined_poses(dataset_dir, saved_poses_dir, scenes, output_dir=None):
     """Invokes export_refined_poses.py to convert opt_cams.pt to COLMAP format."""
     print("\n=== Synchronizing Refined Poses from Phase 1 ===")
     export_script = os.path.join(REPO_ROOT, "export_refined_poses.py")
@@ -86,9 +86,11 @@ def export_refined_poses(dataset_dir, saved_poses_dir, scenes):
     cmd = [
         sys.executable, export_script,
         "--dataset_dir", dataset_dir,
-        "--saved_poses_dir", saved_poses_dir,
-        "--scenes"
-    ] + scenes
+        "--saved_poses_dir", saved_poses_dir
+    ]
+    if output_dir:
+        cmd += ["--output_dir", output_dir]
+    cmd += ["--scenes"] + scenes
     
     print(f"Running Pose Exporter: {' '.join(cmd)}")
     subprocess.run(cmd, check=True)
@@ -182,8 +184,11 @@ def main():
     args.scenes = sorted(args.scenes)
     print(f"Target Phase 2 scenes to process ({len(args.scenes)}): {args.scenes}")
 
+    processed_dataset_dir = os.path.join(args.working_dir, "processed_dataset")
+    os.makedirs(processed_dataset_dir, exist_ok=True)
+
     # Step 2: Export Phase 1 Refined Poses to COLMAP format
-    export_refined_poses(args.dataset_dir, args.saved_poses_dir, args.scenes)
+    export_refined_poses(args.dataset_dir, args.saved_poses_dir, args.scenes, processed_dataset_dir)
 
     submission_dir = os.path.join(args.working_dir, "submission_phase2")
     os.makedirs(submission_dir, exist_ok=True)
@@ -197,7 +202,10 @@ def main():
         print(f" Phase 2 (2DGS) Scene [{idx}/{len(args.scenes)}]: {scene}")
         print(f"=======================================================")
 
-        scene_train_path = os.path.join(args.dataset_dir, scene, "train")
+        scene_train_path = os.path.join(processed_dataset_dir, scene, "train")
+        if not os.path.exists(scene_train_path):
+            scene_train_path = os.path.join(args.dataset_dir, scene, "train")
+
         scene_csv_path = os.path.join(args.dataset_dir, scene, "test", "test_poses.csv")
         temp_model_dir = os.path.join(args.working_dir, "temp_model", scene)
         scene_render_output = os.path.join(submission_dir, scene)

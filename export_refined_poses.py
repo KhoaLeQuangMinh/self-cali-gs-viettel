@@ -162,10 +162,37 @@ def export_colmap_format(cameras_info, output_dir):
     print(f"  [OK] Exported {len(cameras_info)} cameras to COLMAP format in: {output_dir}")
 
 
-def process_scene_poses(scene_train_dir, opt_cams_path):
+def process_scene_poses(scene_train_dir, opt_cams_path, target_train_dir=None):
     """Loads opt_cams.pt / JSON and converts to COLMAP format in train/sparse/0/ and train/sparse_refined/."""
     print(f"Loading refined poses from: {opt_cams_path}")
     
+    if target_train_dir is None:
+        target_train_dir = scene_train_dir
+
+    # Check if target_train_dir is writable; if not, create a fallback in current working dir
+    try:
+        os.makedirs(target_train_dir, exist_ok=True)
+        test_file = os.path.join(target_train_dir, ".write_test")
+        with open(test_file, "w") as f:
+            f.write("test")
+        os.remove(test_file)
+    except (OSError, PermissionError):
+        # Read-only filesystem fallback (e.g. /kaggle/input/)
+        fallback_dir = os.path.join(os.getcwd(), "processed_dataset", os.path.basename(os.path.dirname(scene_train_dir)), "train")
+        print(f"[Read-Only Detected] Redirecting pose export to writable directory: {fallback_dir}")
+        target_train_dir = fallback_dir
+        os.makedirs(target_train_dir, exist_ok=True)
+
+    # Symlink / Copy images directory if target_train_dir is separate from scene_train_dir
+    if os.path.abspath(target_train_dir) != os.path.abspath(scene_train_dir):
+        orig_images = os.path.join(scene_train_dir, "images")
+        target_images = os.path.join(target_train_dir, "images")
+        if os.path.exists(orig_images) and not os.path.exists(target_images):
+            try:
+                os.symlink(orig_images, target_images)
+            except Exception:
+                shutil.copytree(orig_images, target_images)
+
     # Patch torch.tensor and torch.device for CPU execution
     if not torch.cuda.is_available():
         _orig_tensor = torch.tensor
@@ -251,17 +278,19 @@ def process_scene_poses(scene_train_dir, opt_cams_path):
                 "cy": cy
             })
             
-    sparse_0_dir = os.path.join(scene_train_dir, "sparse", "0")
-    sparse_ref_dir = os.path.join(scene_train_dir, "sparse_refined")
+    sparse_0_dir = os.path.join(target_train_dir, "sparse", "0")
+    sparse_ref_dir = os.path.join(target_train_dir, "sparse_refined")
     
     export_colmap_format(cameras_info, sparse_0_dir)
     export_colmap_format(cameras_info, sparse_ref_dir)
+    return target_train_dir
 
 
 def main():
     parser = ArgumentParser(description="Export Phase 1 refined poses to COLMAP format for Phase 2 2DGS")
     parser.add_argument("--dataset_dir", required=True, help="Path to input dataset root (e.g., /content/VAI_NVS_DATA_ROUND2)")
     parser.add_argument("--saved_poses_dir", required=True, help="Path to saved poses directory (e.g., /content/drive/MyDrive/saved_poses)")
+    parser.add_argument("--output_dir", default=None, help="Optional writable output directory for processed dataset")
     parser.add_argument("--scenes", nargs="+", default=[], help="Specific scenes to process (default: all)")
     args = parser.parse_args()
 
@@ -281,7 +310,8 @@ def main():
             print(f"[Warning] Could not find opt_cams.pt for scene {scene} in {args.saved_poses_dir}. Skipping pose export for {scene}.")
             continue
             
-        process_scene_poses(scene_train_dir, opt_cams_path)
+        target_train_dir = os.path.join(args.output_dir, scene, "train") if args.output_dir else None
+        process_scene_poses(scene_train_dir, opt_cams_path, target_train_dir)
 
     print("\n🎉 All available refined poses successfully exported to COLMAP format!")
 
