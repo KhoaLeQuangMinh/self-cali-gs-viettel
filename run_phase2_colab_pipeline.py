@@ -40,7 +40,8 @@ def install_python_dependencies():
         "matplotlib",
         "pandas",
         "tqdm",
-        "easydict"
+        "easydict",
+        "FrEIA"
     ]
     subprocess.run([sys.executable, "-m", "pip", "install"] + required_packages, check=True)
 
