@@ -239,6 +239,16 @@ def main():
         print(f"Running Renderer: {' '.join(render_cmd)}")
         subprocess.run(render_cmd, env=env, check=True)
 
+        # Backup opt_cams.pt and lens_net checkpoints to saved_poses_dir (e.g., Google Drive)
+        if args.saved_poses_dir:
+            drive_scene_dir = os.path.join(args.saved_poses_dir, "content", "working", "temp_model", scene)
+            os.makedirs(drive_scene_dir, exist_ok=True)
+            local_opt_cams = os.path.join(temp_model_dir, "opt_cams.pt")
+            if os.path.exists(local_opt_cams):
+                dest_path = os.path.join(drive_scene_dir, "opt_cams.pt")
+                shutil.copy2(local_opt_cams, dest_path)
+                print(f"[Backup OK] Saved {scene} opt_cams.pt ({os.path.getsize(dest_path)} bytes) to {dest_path}")
+
         # C. Clean Up Scene Checkpoints (Disk & RAM Protection)
         print(f"Cleaning up temporary model files for {scene} from disk...")
         if os.path.exists(temp_model_dir):
