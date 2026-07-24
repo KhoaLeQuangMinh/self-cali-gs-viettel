@@ -170,14 +170,7 @@ def colormap(img, cmap='jet'):
     fig.colorbar(im, ax=ax)
     fig.tight_layout()
     fig.canvas.draw()
-    if hasattr(fig.canvas, 'buffer_rgba'):
-        data = np.asarray(fig.canvas.buffer_rgba())[:, :, :3]
-    elif hasattr(fig.canvas, 'tostring_rgb'):
-        data = np.frombuffer(fig.canvas.tostring_rgb(), dtype=np.uint8)
-        data = data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
-    else:
-        data = np.frombuffer(fig.canvas.tostring_argb(), dtype=np.uint8)
-        data = data.reshape(fig.canvas.get_width_height()[::-1] + (4,))[:, :, 1:4]
+    data = np.asarray(fig.canvas.buffer_rgba())[:, :, :3]
     img = torch.from_numpy(data / 255.).float().permute(2,0,1)
     plt.close()
     return img

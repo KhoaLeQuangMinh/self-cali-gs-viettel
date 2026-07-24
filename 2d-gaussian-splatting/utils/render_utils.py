@@ -261,7 +261,8 @@ def create_videos(base_dir, input_dir, out_name, num_frames=480):
         elif k.startswith('depth'):
           img = render_dist_curve_fn(img)
           img = np.clip((img - np.minimum(lo, hi)) / np.abs(hi - lo), 0, 1)
-          img = cm.get_cmap('turbo')(img)[..., :3]
+          import matplotlib
+          img = matplotlib.colormaps['turbo'](img)[..., :3]
 
         frame = (np.clip(np.nan_to_num(img), 0., 1.) * 255.).astype(np.uint8)
         writer.add_image(frame)

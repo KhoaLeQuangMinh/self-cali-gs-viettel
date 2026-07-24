@@ -120,6 +120,7 @@ def render_phase2_test_poses(model_path, iteration, csv_path, output_dir, sh_deg
         def __init__(self):
             self.convert_SHs_python = False
             self.compute_cov3D_python = False
+            self.depth_ratio = 0.0
             self.debug = False
 
     pipe = PipelineParamsDummy()

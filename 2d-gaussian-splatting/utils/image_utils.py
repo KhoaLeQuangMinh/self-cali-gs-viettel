@@ -32,7 +32,8 @@ def gradient_map(image):
     return magnitude
 
 def colormap(map, cmap="turbo"):
-    colors = torch.tensor(plt.cm.get_cmap(cmap).colors).to(map.device)
+    import matplotlib
+    colors = torch.tensor(matplotlib.colormaps[cmap].colors).to(map.device)
     map = (map - map.min()) / (map.max() - map.min())
     map = (map * 255).round().long().squeeze()
     map = colors[map].permute(2,0,1)

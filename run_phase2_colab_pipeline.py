@@ -232,7 +232,7 @@ def main():
             "-m", temp_model_dir,
             "--iterations", str(args.iterations),
             "--sh_degree", str(args.sh_degree),
-            "--eval"
+            "--test_iterations", "-1"
         ]
 
         print(f"Running Phase 2 (2DGS) Training: {' '.join(train_cmd)}")
