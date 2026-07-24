@@ -271,24 +271,51 @@ def process_scene_poses(scene_train_dir, opt_cams_path, target_train_dir=None):
                 cams = [cams_data]
 
             for cam in cams:
-                R = getattr(cam, "R", np.eye(3))
-                if hasattr(R, "cpu"):
-                    R = R.cpu().numpy()
-                if R.shape == (3, 3):
-                    qvec = rotation_matrix_to_quaternion(R)
-                else:
-                    qvec = np.array([1.0, 0.0, 0.0, 0.0])
-
-                T = getattr(cam, "T", np.zeros(3))
-                if hasattr(T, "cpu"):
-                    T = T.cpu().numpy()
-                tvec = T.flatten()
-
                 w = getattr(cam, "image_width", getattr(cam, "width", 1920))
                 h = getattr(cam, "image_height", getattr(cam, "height", 1080))
 
-                if hasattr(cam, "fx") and hasattr(cam, "fy"):
-                    fx, fy = float(cam.fx), float(cam.fy)
+                # Extract refined rotation matrix
+                if hasattr(cam, "rotation"):
+                    R_mat = cam.rotation
+                    if hasattr(R_mat, "cpu"):
+                        R_mat = R_mat.cpu().detach().numpy()
+                    if R_mat.shape == (3, 3):
+                        qvec = rotation_matrix_to_quaternion(R_mat)
+                    else:
+                        qvec = np.array([1.0, 0.0, 0.0, 0.0])
+                elif hasattr(cam, "R"):
+                    R_mat = getattr(cam, "R")
+                    if hasattr(R_mat, "cpu"):
+                        R_mat = R_mat.cpu().detach().numpy()
+                    if R_mat.shape == (3, 3):
+                        qvec = rotation_matrix_to_quaternion(R_mat.T)
+                    else:
+                        qvec = np.array([1.0, 0.0, 0.0, 0.0])
+                else:
+                    qvec = np.array([1.0, 0.0, 0.0, 0.0])
+
+                # Extract refined translation vector
+                if hasattr(cam, "translation"):
+                    T_vec = cam.translation
+                    if hasattr(T_vec, "cpu"):
+                        T_vec = T_vec.cpu().detach().numpy()
+                    tvec = T_vec.flatten()
+                elif hasattr(cam, "T"):
+                    T_vec = getattr(cam, "T")
+                    if hasattr(T_vec, "cpu"):
+                        T_vec = T_vec.cpu().detach().numpy()
+                    tvec = T_vec.flatten()
+                else:
+                    tvec = np.zeros(3)
+
+                # Extract focal length
+                if hasattr(cam, "focal_x") and hasattr(cam, "focal_y"):
+                    fx, fy = float(cam.focal_x), float(cam.focal_y)
+                elif hasattr(cam, "learnable_fovx") and hasattr(cam, "learnable_fovy"):
+                    fovx = float(cam.learnable_fovx.cpu().detach())
+                    fovy = float(cam.learnable_fovy.cpu().detach())
+                    fx = fov2focal(fovx, w)
+                    fy = fov2focal(fovy, h)
                 elif hasattr(cam, "FoVx") and hasattr(cam, "FoVy"):
                     fx = fov2focal(float(cam.FoVx), w)
                     fy = fov2focal(float(cam.FoVy), h)
