@@ -232,6 +232,7 @@ def main():
             "-m", temp_model_dir,
             "--iterations", str(args.iterations),
             "--sh_degree", str(args.sh_degree),
+            "-r", "1",
             "--test_iterations", "-1"
         ]
 

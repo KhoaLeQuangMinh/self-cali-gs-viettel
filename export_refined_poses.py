@@ -271,8 +271,27 @@ def process_scene_poses(scene_train_dir, opt_cams_path, target_train_dir=None):
                 cams = [cams_data]
 
             for cam in cams:
+                name = getattr(cam, "image_name", f"{len(cameras_info):04d}.png")
+                name = os.path.basename(str(name))
+
+                # Match extension from real images directory if name missing extension
+                orig_images_dir = os.path.join(scene_train_dir, "images")
+                if os.path.exists(orig_images_dir) and not os.path.exists(os.path.join(orig_images_dir, name)):
+                    for ext in [".JPG", ".jpg", ".png", ".jpeg", ".PNG", ".JPEG"]:
+                        if os.path.exists(os.path.join(orig_images_dir, name + ext)):
+                            name = name + ext
+                            break
+
+                # Read exact image dimensions from disk if available
                 w = getattr(cam, "image_width", getattr(cam, "width", 1920))
                 h = getattr(cam, "image_height", getattr(cam, "height", 1080))
+                img_disk_path = os.path.join(orig_images_dir, name)
+                if os.path.exists(img_disk_path):
+                    try:
+                        with Image.open(img_disk_path) as img_file:
+                            w, h = img_file.size
+                    except Exception:
+                        pass
 
                 # Extract refined rotation matrix
                 if hasattr(cam, "rotation"):
@@ -324,17 +343,6 @@ def process_scene_poses(scene_train_dir, opt_cams_path, target_train_dir=None):
 
                 cx = getattr(cam, "cx", w / 2.0)
                 cy = getattr(cam, "cy", h / 2.0)
-
-                name = getattr(cam, "image_name", f"{len(cameras_info):04d}.png")
-                name = os.path.basename(str(name))
-
-                # Match extension from real images directory if name missing extension
-                orig_images_dir = os.path.join(scene_train_dir, "images")
-                if os.path.exists(orig_images_dir) and not os.path.exists(os.path.join(orig_images_dir, name)):
-                    for ext in [".JPG", ".jpg", ".png", ".jpeg", ".PNG", ".JPEG"]:
-                        if os.path.exists(os.path.join(orig_images_dir, name + ext)):
-                            name = name + ext
-                            break
 
                 cameras_info.append({
                     "name": name,
