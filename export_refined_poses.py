@@ -64,7 +64,8 @@ def fov2focal(fov, pixels):
 
 
 def find_opt_cams_path(saved_poses_dir, scene):
-    """Searches multiple candidate paths for opt_cams.pt for a specific scene."""
+    """Searches saved_poses_dir using os.walk to find opt_cams.pt for a specific scene."""
+    # 1. Direct candidate paths
     candidate_paths = [
         os.path.join(saved_poses_dir, "content", "working", "temp_model", scene, "opt_cams.pt"),
         os.path.join(saved_poses_dir, scene, "opt_cams.pt"),
@@ -74,15 +75,32 @@ def find_opt_cams_path(saved_poses_dir, scene):
     ]
     
     for path in candidate_paths:
-        if os.path.exists(path):
+        if os.path.exists(path) and os.path.getsize(path) > 0:
             return path
             
-    # Glob search fallback strictly matching scene directory
-    pattern = os.path.join(saved_poses_dir, "**", scene, "opt_cams.pt")
-    matches = glob.glob(pattern, recursive=True)
-    if matches:
-        return matches[0]
-        
+    # 2. Deep os.walk search across saved_poses_dir
+    if os.path.exists(saved_poses_dir):
+        for root, dirs, files in os.walk(saved_poses_dir):
+            if os.path.basename(root) == scene or scene in root.split(os.sep):
+                for f in files:
+                    if f in ["opt_cams.pt", "cams_train30000.pt"] or f.endswith("_poses.json"):
+                        full_p = os.path.join(root, f)
+                        if os.path.getsize(full_p) > 0:
+                            print(f"[Auto-Found] Matched {scene} pose file via os.walk: {full_p}")
+                            return full_p
+
+    # 3. Global Kaggle search fallback across /kaggle/input and /kaggle/working
+    for base_dir in ["/kaggle/input", "/kaggle/working", os.getcwd()]:
+        if os.path.exists(base_dir):
+            for root, dirs, files in os.walk(base_dir):
+                if os.path.basename(root) == scene:
+                    for f in files:
+                        if f in ["opt_cams.pt", "cams_train30000.pt"]:
+                            full_p = os.path.join(root, f)
+                            if os.path.getsize(full_p) > 0:
+                                print(f"[Auto-Found Global] Matched {scene} pose file via os.walk: {full_p}")
+                                return full_p
+
     return None
 
 
